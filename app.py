@@ -112,14 +112,43 @@ class DatabricksConnector:
 def main():
     st.sidebar.title("📖 About")
     
-    st.sidebar.write("**Democratization of Data**")
-    st.sidebar.write("Empower everyone in the organization to ask data questions using natural language.")
+    st.sidebar.write("**AI-Powered Data Analytics**")
+    st.sidebar.write("Ask questions in natural language. Meta Llama 3.3 generates SQL queries from your questions - no SQL skills needed!")
     
-    st.sidebar.write("**Secured by Databricks**")
-    st.sidebar.write("Data access is enforced with Databricks token auth and governed via workspace permissions.")
+    st.sidebar.write("**Table Sample Columns**")
     
-    st.sidebar.write("**AI Powered Insights**")
-    st.sidebar.write("This app uses Meta Llama 3.3 on Databricks to generate SQL from questions. No SQL skills needed!")
+    st.sidebar.write("**ride_bookings**")
+    st.sidebar.write("RideID, UserID, RouteID, VehicleID, ScheduledTime, Fare")
+    
+    st.sidebar.write("**ride_users**")
+    st.sidebar.write("UserID, Name, Gender, Age, SubscriptionType")
+    
+    st.sidebar.write("**vehicles**")
+    st.sidebar.write("VehicleID, LicensePlate, Capacity, AssignedDriverID")
+    
+    st.sidebar.write("**drivers**")
+    st.sidebar.write("DriverID, Name, Rating, EmploymentType")
+    
+    st.sidebar.write("**routes**")
+    st.sidebar.write("RouteID, RouteName, Stops, AvgDurationMin")
+    
+    st.sidebar.write("**companies**")
+    st.sidebar.write("CompanyID, CompanyName, StaffCount")
+    
+    st.sidebar.write("**company_users**")
+    st.sidebar.write("CompanyID, UserID, SubsidyPercent")
+    
+    st.sidebar.write("**feedback**")
+    st.sidebar.write("FeedbackID, RideID, Rating, Comment")
+    
+    st.sidebar.write("**incidents**")
+    st.sidebar.write("IncidentID, RideID, Type, Status")
+    
+    st.sidebar.write("**payments**")
+    st.sidebar.write("PaymentID, UserID, Amount, PaymentMethod")
+    
+    st.sidebar.write("**subscriptions**")
+    st.sidebar.write("SubscriptionID, UserID, Type, StartDate")
 
     if 'db_connector' not in st.session_state:
         st.session_state.db_connector = DatabricksConnector()
