@@ -112,7 +112,6 @@ class DatabricksConnector:
 def main():
     st.sidebar.title("📖 About")
     
-    # Solution 1: Use st.sidebar.write instead of st.sidebar.markdown
     st.sidebar.write("**Democratization of Data**")
     st.sidebar.write("Empower everyone in the organization to ask data questions using natural language.")
     
@@ -121,14 +120,6 @@ def main():
     
     st.sidebar.write("**AI Powered Insights**")
     st.sidebar.write("This app uses Meta Llama 3.3 on Databricks to generate SQL from questions. No SQL skills needed!")
-    
-    # Solution 2: Use link_button instead of markdown links
-    st.sidebar.write("**Links:**")
-    if st.sidebar.button("🔗 Launch App"):
-        st.sidebar.write("https://aidashboard-mosesotu.streamlit.app/")
-    
-    if st.sidebar.button("📘 GitHub Repo"):
-        st.sidebar.write("https://github.com/Moses-Otu/AI_dashboard")
 
     if 'db_connector' not in st.session_state:
         st.session_state.db_connector = DatabricksConnector()
