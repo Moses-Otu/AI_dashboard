@@ -106,16 +106,19 @@ class DatabricksConnector:
 # App main function
 def main():
     st.sidebar.title("📖 About")
-    st.sidebar.markdown("""
-### Democratization of Data
+    st.sidebar.markdown(r"""
+**Democratization of Data**  
 Empower everyone in the organization to ask data questions using natural language.
 
-### Secured by Databricks
+**Secured by Databricks**  
 Data access is enforced with Databricks token auth and governed via workspace permissions.
 
-### AI Powered Insights
+**AI Powered Insights**  
 This app uses Meta Llama 3.3 on Databricks to generate SQL from questions. No SQL skills needed!
-    """)
+
+**🔗 [Launch App](https://aidashboard-mosesotu.streamlit.app/)**  
+**📘 [GitHub Repo](https://github.com/Moses-Otu/AI_dashboard)**
+""")
 
     if 'db_connector' not in st.session_state:
         st.session_state.db_connector = DatabricksConnector()
@@ -202,7 +205,6 @@ This app uses Meta Llama 3.3 on Databricks to generate SQL from questions. No SQ
                         st.dataframe(results, use_container_width=True)
                     elif results is not None:
                         st.info("✅ No rows returned.")
-
     else:
         st.warning("⚠️ Connect to Databricks via environment variables to get started.")
 
