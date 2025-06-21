@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from datetime import datetime
 import plotly.express as px
 import re
-import pyspark
 
 # Load environment variables from .env
 load_dotenv()
@@ -31,7 +30,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
 
 # Databricks connection handler
 class DatabricksConnector:
@@ -80,7 +78,7 @@ class DatabricksConnector:
                 return None
             clean_query = self.clean_sql_query(query)
             self.cursor.execute(clean_query)
-            columns = [desc[0] for desc in self.cursor.description]
+            columns = [desc[0] for desc in self.cursor.description] if self.cursor.description else []
             results = self.cursor.fetchall()
             return pd.DataFrame(results, columns=columns) if results else pd.DataFrame()
         except Exception as e:
@@ -107,8 +105,7 @@ class DatabricksConnector:
         if self.connection:
             self.connection.close()
 
-
-# Main App
+# App main function
 def main():
     st.sidebar.title("📖 About")
     st.sidebar.write("**AI-Powered Data Analytics**")
@@ -127,33 +124,27 @@ def main():
         "payments": "PaymentID, UserID, Amount, PaymentMethod",
         "subscriptions": "SubscriptionID, UserID, Type, StartDate"
     }
-
     for table, cols in tables.items():
         st.sidebar.write(f"**{table}**")
         st.sidebar.write(cols)
 
-    # Session state setup
     if 'db_connector' not in st.session_state:
         st.session_state.db_connector = DatabricksConnector()
     if 'connected' not in st.session_state:
         st.session_state.connected = False
 
-    # Connect if not connected
     if not st.session_state.connected:
         with st.spinner("Connecting to Databricks..."):
             if st.session_state.db_connector.connect_from_env():
                 st.session_state.connected = True
 
-    # Reset AI tab session vars
     if st.session_state.get("active_tab") != "ai":
         st.session_state.pop("generated_sql", None)
         st.session_state.pop("selected_question", None)
-        st.session_state.pop("results", None)
 
     if st.session_state.connected:
         tab1, tab2, tab3 = st.tabs(["🤖 AI Query Assistant", "📊 Quick Analytics", "🔍 Custom SQL"])
 
-        # --- AI TAB ---
         with tab1:
             st.session_state.active_tab = "ai"
             question = st.text_area("Ask a question about your data:", value=st.session_state.get('selected_question', ''), height=100)
@@ -181,24 +172,38 @@ def main():
                         elif st.session_state.results is not None:
                             st.info("✅ Query executed, no rows returned.")
 
-            # CSV and Databricks save
-            if st.session_state.get("results") is not None and not st.session_state.results.empty:
+        # Save CSV and INSERT INTO DB
+        if st.session_state.get("results") is not None:
+            if not st.session_state.results.empty:
                 csv = st.session_state.results.to_csv(index=False)
                 st.download_button("📥 Download CSV", data=csv, file_name="query_results.csv", mime="text/csv")
 
                 st.subheader("🔄 Save results to Databricks")
                 table_name = st.text_input("Enter table name to save results:", value="ai_generated_data")
-                if st.button("💾 Save to Databricks Table"):
+                if st.button("💾 Save to Databricks Table (SQL INSERT)"):
                     try:
-                        from pyspark.sql import SparkSession
-                        spark = SparkSession.builder.getOrCreate()
-                        spark_df = spark.createDataFrame(st.session_state.results)
-                        spark_df.write.format("delta").mode("overwrite").saveAsTable(f"agent.shuttler.{table_name}")
-                        st.success(f"✅ Results saved to Databricks table: agent.shuttler.{table_name}")
-                    except Exception as e:
-                        st.error(f"❌ Failed to save: {str(e)}")
+                        df = st.session_state.results
+                        connector = st.session_state.db_connector
 
-        # --- QUICK METRICS TAB ---
+                        column_defs = ", ".join([f"`{col}` STRING" for col in df.columns])
+                        create_sql = f"CREATE TABLE IF NOT EXISTS agent.shuttler.{table_name} ({column_defs})"
+                        connector.execute_query(create_sql)
+
+                        insert_sqls = []
+                        for _, row in df.iterrows():
+                            values = ", ".join(
+                                [f"'{str(val).replace('\'', '\'\'')}'" if pd.notna(val) else "NULL" for val in row]
+                            )
+                            insert_sqls.append(f"INSERT INTO agent.shuttler.{table_name} VALUES ({values})")
+
+                        with st.spinner("Saving to Databricks..."):
+                            for query in insert_sqls:
+                                connector.execute_query(query)
+
+                        st.success(f"✅ Saved {len(insert_sqls)} rows to agent.shuttler.{table_name}")
+                    except Exception as e:
+                        st.error(f"❌ Failed to save via SQL INSERT: {str(e)}")
+
         with tab2:
             col1, col2 = st.columns(2)
             col3, col4 = st.columns(2)
@@ -231,7 +236,6 @@ def main():
                     if r is not None and not r.empty:
                         st.metric("Avg Rating", f"{r.iloc[0]['avg_rating']:.2f}")
 
-        # --- CUSTOM SQL TAB ---
         with tab3:
             sql_query = st.text_area("Enter a SQL query to run:", height=200)
             if st.button("Execute Custom Query") and sql_query.strip():
@@ -243,7 +247,6 @@ def main():
                         st.info("✅ No rows returned.")
     else:
         st.warning("⚠️ Connect to Databricks via environment variables to get started.")
-
 
 if __name__ == "__main__":
     main()
