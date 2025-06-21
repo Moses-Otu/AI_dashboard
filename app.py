@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 import plotly.express as px
 import re
+import pyspark
 
 # Load environment variables from .env
 load_dotenv()
@@ -64,9 +65,6 @@ class DatabricksConnector:
             return False
 
     def clean_sql_query(self, query):
-        """
-        Clean markdown-style output to extract raw SQL.
-        """
         if not query:
             return ""
         query = query.strip()
@@ -111,44 +109,26 @@ class DatabricksConnector:
 # App main function
 def main():
     st.sidebar.title("📖 About")
-    
     st.sidebar.write("**AI-Powered Data Analytics**")
     st.sidebar.write("Ask questions in natural language. Meta Llama 3.3 generates SQL queries from your questions - no SQL skills needed!")
     
-    st.sidebar.write("**Table Sample Columns**")
-    
-    st.sidebar.write("**ride_bookings**")
-    st.sidebar.write("RideID, UserID, RouteID, VehicleID, ScheduledTime, Fare")
-    
-    st.sidebar.write("**ride_users**")
-    st.sidebar.write("UserID, Name, Gender, Age, SubscriptionType")
-    
-    st.sidebar.write("**vehicles**")
-    st.sidebar.write("VehicleID, LicensePlate, Capacity, AssignedDriverID")
-    
-    st.sidebar.write("**drivers**")
-    st.sidebar.write("DriverID, Name, Rating, EmploymentType")
-    
-    st.sidebar.write("**routes**")
-    st.sidebar.write("RouteID, RouteName, Stops, AvgDurationMin")
-    
-    st.sidebar.write("**companies**")
-    st.sidebar.write("CompanyID, CompanyName, StaffCount")
-    
-    st.sidebar.write("**company_users**")
-    st.sidebar.write("CompanyID, UserID, SubsidyPercent")
-    
-    st.sidebar.write("**feedback**")
-    st.sidebar.write("FeedbackID, RideID, Rating, Comment")
-    
-    st.sidebar.write("**incidents**")
-    st.sidebar.write("IncidentID, RideID, Type, Status")
-    
-    st.sidebar.write("**payments**")
-    st.sidebar.write("PaymentID, UserID, Amount, PaymentMethod")
-    
-    st.sidebar.write("**subscriptions**")
-    st.sidebar.write("SubscriptionID, UserID, Type, StartDate")
+    # Sidebar Table info
+    tables = {
+        "ride_bookings": "RideID, UserID, RouteID, VehicleID, ScheduledTime, Fare",
+        "ride_users": "UserID, Name, Gender, Age, SubscriptionType",
+        "vehicles": "VehicleID, LicensePlate, Capacity, AssignedDriverID",
+        "drivers": "DriverID, Name, Rating, EmploymentType",
+        "routes": "RouteID, RouteName, Stops, AvgDurationMin",
+        "companies": "CompanyID, CompanyName, StaffCount",
+        "company_users": "CompanyID, UserID, SubsidyPercent",
+        "feedback": "FeedbackID, RideID, Rating, Comment",
+        "incidents": "IncidentID, RideID, Type, Status",
+        "payments": "PaymentID, UserID, Amount, PaymentMethod",
+        "subscriptions": "SubscriptionID, UserID, Type, StartDate"
+    }
+    for table, cols in tables.items():
+        st.sidebar.write(f"**{table}**")
+        st.sidebar.write(cols)
 
     if 'db_connector' not in st.session_state:
         st.session_state.db_connector = DatabricksConnector()
@@ -170,6 +150,7 @@ def main():
         with tab1:
             st.session_state.active_tab = "ai"
             question = st.text_area("Ask a question about your data:", value=st.session_state.get('selected_question', ''), height=100)
+            
             if st.button("🔮 Generate SQL") and question:
                 with st.spinner("Generating SQL..."):
                     generated_sql = st.session_state.db_connector.get_ai_query(question)
@@ -186,17 +167,32 @@ def main():
 
                 if st.button("▶️ Execute Query"):
                     with st.spinner("Running query..."):
-                        results = st.session_state.db_connector.execute_query(st.session_state.generated_sql)
-                        if results is not None and not results.empty:
+                        st.session_state.results = st.session_state.db_connector.execute_query(st.session_state.generated_sql)
+                        if st.session_state.results is not None and not st.session_state.results.empty:
                             st.subheader("Results:")
-                            st.dataframe(results, use_container_width=True)
-                            csv = results.to_csv(index=False)
-                            st.download_button("📥 Download CSV", data=csv, file_name="query_results.csv", mime="text/csv")
-                        elif results is not None:
+                            st.dataframe(st.session_state.results, use_container_width=True)
+                        elif st.session_state.results is not None:
                             st.info("✅ Query executed, no rows returned.")
 
+            # Show download + save options if results exist
+            if st.session_state.get("results") is not None:
+                if not st.session_state.results.empty:
+                    csv = st.session_state.results.to_csv(index=False)
+                    st.download_button("📥 Download CSV", data=csv, file_name="query_results.csv", mime="text/csv")
+
+                    st.subheader("🔄 Save results to Databricks")
+                    table_name = st.text_input("Enter table name to save results:", value="ai_generated_data")
+                    if st.button("💾 Save to Databricks Table"):
+                        try:
+                            from pyspark.sql import SparkSession
+                            spark = SparkSession.builder.getOrCreate()
+                            spark_df = spark.createDataFrame(st.session_state.results)
+                            spark_df.write.format("delta").mode("overwrite").saveAsTable(f"agent.shuttler.{table_name}")
+                            st.success(f"✅ Results saved to Databricks table: agent.shuttler.{table_name}")
+                        except Exception as e:
+                            st.error(f"❌ Failed to save: {str(e)}")
+
         with tab2:
-            # Make mobile-friendly columns
             col1, col2 = st.columns(2)
             col3, col4 = st.columns(2)
 
