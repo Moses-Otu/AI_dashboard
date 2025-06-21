@@ -149,48 +149,48 @@ def main():
 
         with tab1:
             st.session_state.active_tab = "ai"
-            question = st.text_area("Ask a question about your data:", value=st.session_state.get('selected_question', ''), height=100)
-            
-            if st.button("🔮 Generate SQL") and question:
-                with st.spinner("Generating SQL..."):
-                    generated_sql = st.session_state.db_connector.get_ai_query(question)
-                    st.session_state.generated_sql = generated_sql
-                    st.session_state.selected_question = question
-                    if generated_sql:
-                        st.success("✅ SQL generated")
-                    else:
-                        st.error("❌ Failed to generate SQL")
+        question = st.text_area("Ask a question about your data:", value=st.session_state.get('selected_question', ''), height=100)
+    
+    if st.button("🔮 Generate SQL") and question:
+        with st.spinner("Generating SQL..."):
+            generated_sql = st.session_state.db_connector.get_ai_query(question)
+            st.session_state.generated_sql = generated_sql
+            st.session_state.selected_question = question
+            if generated_sql:
+                st.success("✅ SQL generated")
+            else:
+                st.error("❌ Failed to generate SQL")
 
-            if st.session_state.get("generated_sql"):
-                st.subheader("Generated SQL:")
-                st.code(st.session_state.generated_sql, language="sql")
+    if st.session_state.get("generated_sql"):
+        st.subheader("Generated SQL:")
+        st.code(st.session_state.generated_sql, language="sql")
 
-                if st.button("▶️ Execute Query"):
-                    with st.spinner("Running query..."):
-                        st.session_state.results = st.session_state.db_connector.execute_query(st.session_state.generated_sql)
-                        if st.session_state.results is not None and not st.session_state.results.empty:
-                            st.subheader("Results:")
-                            st.dataframe(st.session_state.results, use_container_width=True)
-                        elif st.session_state.results is not None:
-                            st.info("✅ Query executed, no rows returned.")
+        if st.button("▶️ Execute Query"):
+            with st.spinner("Running query..."):
+                st.session_state.results = st.session_state.db_connector.execute_query(st.session_state.generated_sql)
+                if st.session_state.results is not None and not st.session_state.results.empty:
+                    st.subheader("Results:")
+                    st.dataframe(st.session_state.results, use_container_width=True)
+                elif st.session_state.results is not None:
+                    st.info("✅ Query executed, no rows returned.")
 
-            # Show download + save options if results exist
-            if st.session_state.get("results") is not None:
-                if not st.session_state.results.empty:
-                    csv = st.session_state.results.to_csv(index=False)
-                    st.download_button("📥 Download CSV", data=csv, file_name="query_results.csv", mime="text/csv")
+    # Show download + save options if results exist
+    if st.session_state.get("results") is not None:
+        if not st.session_state.results.empty:
+            csv = st.session_state.results.to_csv(index=False)
+            st.download_button("📥 Download CSV", data=csv, file_name="query_results.csv", mime="text/csv")
 
-                    st.subheader("🔄 Save results to Databricks")
-                    table_name = st.text_input("Enter table name to save results:", value="ai_generated_data")
-                    if st.button("💾 Save to Databricks Table"):
-                        try:
-                            from pyspark.sql import SparkSession
-                            spark = SparkSession.builder.getOrCreate()
-                            spark_df = spark.createDataFrame(st.session_state.results)
-                            spark_df.write.format("delta").mode("overwrite").saveAsTable(f"agent.shuttler.{table_name}")
-                            st.success(f"✅ Results saved to Databricks table: agent.shuttler.{table_name}")
-                        except Exception as e:
-                            st.error(f"❌ Failed to save: {str(e)}")
+            st.subheader("🔄 Save results to Databricks")
+            table_name = st.text_input("Enter table name to save results:", value="ai_generated_data")
+            if st.button("💾 Save to Databricks Table"):
+                try:
+                    from pyspark.sql import SparkSession
+                    spark = SparkSession.builder.getOrCreate()
+                    spark_df = spark.createDataFrame(st.session_state.results)
+                    spark_df.write.format("delta").mode("overwrite").saveAsTable(f"agent.shuttler.{table_name}")
+                    st.success(f"✅ Results saved to Databricks table: agent.shuttler.{table_name}")
+                except Exception as e:
+                    st.error(f"❌ Failed to save: {str(e)}")
 
         with tab2:
             col1, col2 = st.columns(2)
