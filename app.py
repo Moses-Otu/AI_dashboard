@@ -10,7 +10,7 @@ load_dotenv()
 
 # Page setup
 st.set_page_config(page_title="tacsi Analytics", page_icon="🚘", layout="wide")
-st.markdown('<h1 class="main-header">🚘 tacsi Analytics Dashboard</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🚘 tacsi Analytics </h1>', unsafe_allow_html=True)
 
 # CSS Styling
 st.markdown("""
@@ -162,11 +162,11 @@ def main():
                 if st.button("Save as View"):
                     try:
                         create_view_sql = f"""
-                        CREATE OR REPLACE VIEW agent.shuttler.{table_name} AS
+                        CREATE OR REPLACE VIEW agent.shuttler_reports.{table_name} AS
                         {st.session_state.generated_sql}
                         """
                         st.session_state.db_connector.execute_query(create_view_sql)
-                        st.success(f"View created: agent.shuttler.{table_name}")
+                        st.success(f"View created: agent.shuttler_reports.{table_name}")
                     except Exception as e:
                         st.error(f"Failed to create view: {str(e)}")
 
@@ -182,11 +182,16 @@ def main():
                         st.metric("Total Rides", r.iloc[0]['total_rides'])
 
             with col2:
-                if st.button("Revenue Today"):
+                if st.button("💰 Revenue Today", use_container_width=True):
                     q = "SELECT SUM(Fare) AS revenue FROM agent.shuttler.ride_bookings WHERE DATE(ScheduledTime) = CURRENT_DATE()"
                     r = st.session_state.db_connector.execute_query(q)
                     if r is not None and not r.empty:
-                        st.metric("Revenue", f"₦{r.iloc[0]['revenue']:,.2f}")
+                        revenue = r.iloc[0]['revenue']
+                    if revenue is not None:
+                        st.metric("Revenue", f"₦{revenue:,.2f}")
+                else:
+                    st.metric("Revenue", "₦0.00")
+
 
             with col3:
                 if st.button("Weekly Active Users"):
