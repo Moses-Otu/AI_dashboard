@@ -9,8 +9,8 @@ import re
 load_dotenv()
 
 # Page setup
-st.set_page_config(page_title="Shuttlers AI Analytics", page_icon="🚘", layout="wide")
-st.markdown('<h1 class="main-header">🚘 Shuttlers AI Analytics Dashboard</h1>', unsafe_allow_html=True)
+st.set_page_config(page_title="tacsi Analytics", page_icon="🚘", layout="wide")
+st.markdown('<h1 class="main-header">🚘 tacsi Analytics Dashboard</h1>', unsafe_allow_html=True)
 
 # CSS Styling
 st.markdown("""
@@ -109,23 +109,6 @@ def main():
     st.sidebar.write("**AI-Powered Data Analytics**")
     st.sidebar.write("Ask questions in natural language. Meta Llama 3.3 generates SQL queries from your questions - no SQL skills needed!")
 
-    tables = {
-        "ride_bookings": "RideID, UserID, RouteID, VehicleID, ScheduledTime, Fare",
-        "ride_users": "UserID, Name, Gender, Age, SubscriptionType",
-        "vehicles": "VehicleID, LicensePlate, Capacity, AssignedDriverID",
-        "drivers": "DriverID, Name, Rating, EmploymentType",
-        "routes": "RouteID, RouteName, Stops, AvgDurationMin",
-        "companies": "CompanyID, CompanyName, StaffCount",
-        "company_users": "CompanyID, UserID, SubsidyPercent",
-        "feedback": "FeedbackID, RideID, Rating, Comment",
-        "incidents": "IncidentID, RideID, Type, Status",
-        "payments": "PaymentID, UserID, Amount, PaymentMethod",
-        "subscriptions": "SubscriptionID, UserID, Type, StartDate"
-    }
-    for table, cols in tables.items():
-        st.sidebar.write(f"**{table}**")
-        st.sidebar.write(cols)
-
     if 'db_connector' not in st.session_state:
         st.session_state.db_connector = DatabricksConnector()
     if 'connected' not in st.session_state:
@@ -141,7 +124,7 @@ def main():
         st.session_state.pop("selected_question", None)
 
     if st.session_state.connected:
-        tab1, tab2, tab3 = st.tabs(["🤖 AI Query Assistant", "📊 Quick Analytics", "🔍 Custom SQL"])
+        tab1, tab2, tab3, tab4 = st.tabs(["🤖 AI Query Assistant", "📊 Quick Analytics", "🔍 Custom SQL", "📘 Data Dictionary"])
 
         with tab1:
             st.session_state.active_tab = "ai"
@@ -153,67 +136,67 @@ def main():
                     st.session_state.generated_sql = generated_sql
                     st.session_state.selected_question = question
                     if generated_sql:
-                        st.success("✅ SQL generated")
+                        st.success("SQL generated successfully")
                     else:
-                        st.error("❌ Failed to generate SQL")
+                        st.error("Failed to generate SQL")
 
             if st.session_state.get("generated_sql"):
                 st.subheader("Generated SQL:")
                 st.code(st.session_state.generated_sql, language="sql")
 
-                if st.button("▶️ Execute Query"):
+                if st.button("Execute Query"):
                     with st.spinner("Running query..."):
                         st.session_state.results = st.session_state.db_connector.execute_query(st.session_state.generated_sql)
                         if st.session_state.results is not None and not st.session_state.results.empty:
                             st.subheader("Results:")
                             st.dataframe(st.session_state.results, use_container_width=True)
                         elif st.session_state.results is not None:
-                            st.info("✅ Query executed, no rows returned.")
+                            st.info("Query executed, no rows returned.")
 
             if st.session_state.get("results") is not None and not st.session_state.results.empty:
                 csv = st.session_state.results.to_csv(index=False)
-                st.download_button("📥 Download CSV", data=csv, file_name="query_results.csv", mime="text/csv")
+                st.download_button("Download CSV", data=csv, file_name="query_results.csv", mime="text/csv")
 
-                st.subheader("🧾 Save as Databricks View")
+                st.subheader("Save as Databricks View")
                 table_name = st.text_input("Enter view name to save:", value="ai_generated_view")
-                if st.button("💾 Save as View"):
+                if st.button("Save as View"):
                     try:
                         create_view_sql = f"""
                         CREATE OR REPLACE VIEW agent.shuttler.{table_name} AS
                         {st.session_state.generated_sql}
                         """
                         st.session_state.db_connector.execute_query(create_view_sql)
-                        st.success(f"✅ View created: agent.shuttler.{table_name}")
+                        st.success(f"View created: agent.shuttler.{table_name}")
                     except Exception as e:
-                        st.error(f"❌ Failed to create view: {str(e)}")
+                        st.error(f"Failed to create view: {str(e)}")
 
         with tab2:
             col1, col2 = st.columns(2)
             col3, col4 = st.columns(2)
 
             with col1:
-                if st.button("📊 Rides Today", use_container_width=True):
+                if st.button("Rides Today"):
                     q = "SELECT COUNT(*) AS total_rides FROM agent.shuttler.ride_bookings WHERE DATE(ScheduledTime) = CURRENT_DATE()"
                     r = st.session_state.db_connector.execute_query(q)
                     if r is not None and not r.empty:
                         st.metric("Total Rides", r.iloc[0]['total_rides'])
 
             with col2:
-                if st.button("💰 Revenue Today", use_container_width=True):
+                if st.button("Revenue Today"):
                     q = "SELECT SUM(Fare) AS revenue FROM agent.shuttler.ride_bookings WHERE DATE(ScheduledTime) = CURRENT_DATE()"
                     r = st.session_state.db_connector.execute_query(q)
                     if r is not None and not r.empty:
                         st.metric("Revenue", f"₦{r.iloc[0]['revenue']:,.2f}")
 
             with col3:
-                if st.button("👥 Weekly Active Users", use_container_width=True):
+                if st.button("Weekly Active Users"):
                     q = "SELECT COUNT(DISTINCT UserID) as active_users FROM agent.shuttler.ride_bookings WHERE DATE(ScheduledTime) >= DATE_SUB(CURRENT_DATE(), 7)"
                     r = st.session_state.db_connector.execute_query(q)
                     if r is not None and not r.empty:
                         st.metric("7-Day Active", r.iloc[0]['active_users'])
 
             with col4:
-                if st.button("⭐ Avg Rating (30d)", use_container_width=True):
+                if st.button("Avg Rating (30d)"):
                     q = "SELECT AVG(Rating) as avg_rating FROM agent.shuttler.feedback WHERE DATE(Timestamp) >= DATE_SUB(CURRENT_DATE(), 30)"
                     r = st.session_state.db_connector.execute_query(q)
                     if r is not None and not r.empty:
@@ -227,9 +210,19 @@ def main():
                     if results is not None and not results.empty:
                         st.dataframe(results, use_container_width=True)
                     elif results is not None:
-                        st.info("✅ No rows returned.")
+                        st.info("No rows returned.")
+
+        with tab4:
+            st.subheader("📘 tacsi Data Dictionary")
+            try:
+                dict_df = pd.read_csv("tacsi.csv")
+                st.dataframe(dict_df, use_container_width=True)
+                csv_data = dict_df.to_csv(index=False).encode('utf-8')
+                st.download_button("Download Data Dictionary CSV", csv_data, file_name="tacsi.csv", mime="text/csv")
+            except Exception as e:
+                st.error(f"Could not load data dictionary: {str(e)}")
     else:
-        st.warning("⚠️ Connect to Databricks via environment variables to get started.")
+        st.warning("Connect to Databricks via environment variables to get started.")
 
 if __name__ == "__main__":
     main()

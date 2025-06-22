@@ -1,0 +1,46 @@
+Table Name,Column Name,Data Type,Description
+ride_bookings,RideID,STRING,Unique identifier for each ride.
+ride_bookings,UserID,STRING,ID of the customer who booked the ride.
+ride_bookings,RouteID,STRING,ID of the route taken.
+ride_bookings,VehicleID,STRING,Vehicle assigned to the ride.
+ride_bookings,ScheduledTime,TIMESTAMP,Scheduled departure time.
+ride_bookings,Fare,DECIMAL,Fare charged for the ride.
+ride_users,UserID,STRING,Unique user identifier.
+ride_users,Name,STRING,Full name of the user.
+ride_users,Gender,STRING,Gender identity of the user.
+ride_users,Age,INTEGER,Age of the user.
+ride_users,SubscriptionType,STRING,User’s current subscription plan.
+vehicles,VehicleID,STRING,Unique ID for each vehicle.
+vehicles,LicensePlate,STRING,Vehicle registration plate number.
+vehicles,Capacity,INTEGER,Number of passengers the vehicle can carry.
+vehicles,AssignedDriverID,STRING,Driver currently assigned to the vehicle.
+drivers,DriverID,STRING,Unique ID for each driver.
+drivers,Name,STRING,Full name of the driver.
+drivers,Rating,DECIMAL,Average feedback rating from customers.
+drivers,EmploymentType,STRING,Type of employment.
+routes,RouteID,STRING,Unique identifier for a route.
+routes,RouteName,STRING,Human-readable name of the route.
+routes,Stops,ARRAY<STRING>,List of stop names on the route.
+routes,AvgDurationMin,INTEGER,Average travel duration in minutes.
+companies,CompanyID,STRING,Unique identifier for each company.
+companies,CompanyName,STRING,Name of the company.
+companies,StaffCount,INTEGER,Number of employees registered.
+company_users,CompanyID,STRING,Reference to the associated company.
+company_users,UserID,STRING,User working in the company.
+company_users,SubsidyPercent,DECIMAL,Fare percentage subsidized by the company.
+feedback,FeedbackID,STRING,Unique ID of the feedback entry.
+feedback,RideID,STRING,Ride the feedback relates to.
+feedback,Rating,DECIMAL,Star rating given by the user.
+feedback,Comment,STRING,User comment text.
+incidents,IncidentID,STRING,Unique ID of the reported incident.
+incidents,RideID,STRING,Ride where the incident occurred.
+incidents,Type,STRING,Type of incident reported.
+incidents,Status,STRING,Current status of the incident.
+payments,PaymentID,STRING,Unique identifier for the payment.
+payments,UserID,STRING,User who made the payment.
+payments,Amount,DECIMAL,Amount paid in Naira.
+payments,PaymentMethod,STRING,Mode of payment.
+subscriptions,SubscriptionID,STRING,Unique ID for the subscription.
+subscriptions,UserID,STRING,User who is subscribed.
+subscriptions,Type,STRING,Type of subscription.
+subscriptions,StartDate,DATE,Subscription start date.
