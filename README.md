@@ -2,6 +2,10 @@
 
 **Empowering teams through the democratization of data**
 
+
+![Black and White Simple Art Director LinkedIn Banner (3)](https://github.com/user-attachments/assets/44c85315-15ce-45a3-ad82-02e2d6504949)
+
+
 [👉 Launch the App](https://aidashboard-mosesotu.streamlit.app/)
 
 ---
